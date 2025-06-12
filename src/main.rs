@@ -17,11 +17,11 @@ enum Command {
     Get { nickname: String },
     /// Add a new client configuration
     Add {
-        #[arg(long)]
+        #[arg(short, long)]
         nickname: String,
-        #[arg(long)]
+        #[arg(short, long)]
         auth_url: String,
-        #[arg(long)]
+        #[arg(short, long)]
         client_id: String,
     },
 }
