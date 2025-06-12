@@ -1,3 +1,4 @@
+use prettytable::{Table, row};
 use reqwest::Client;
 use rpassword::read_password;
 use serde::{Deserialize, Serialize};
@@ -139,4 +140,25 @@ pub fn save_config(path: &Path, config: &ConfigFile) -> io::Result<()> {
     }
     let data = serde_json::to_string_pretty(config)?;
     fs::write(path, data)
+}
+
+pub fn delete_client(nickname: &str, config: &mut ConfigFile) {
+    if config.clients.remove(nickname).is_some() {
+        let config_file = get_config_path();
+        match save_config(&config_file, config) {
+            Ok(()) => println!("Client '{}' removed", nickname),
+            Err(e) => println!("Failed to update config file.\n{}", e),
+        }
+    } else {
+        println!("Client '{}' doesn't exist", nickname);
+    }
+}
+
+pub fn list_clients(config: &mut ConfigFile) -> Table {
+    let mut table = Table::new();
+    table.add_row(row!["Name", "ClientId"]);
+    config.clients.iter().for_each(|(nickname, config)| {
+        table.add_row(row![nickname, &config.client_id]);
+    });
+    table
 }

@@ -5,6 +5,8 @@ use tokens::{
     read_config, save_config,
 };
 
+use crate::tokens::{delete_client, list_clients};
+
 #[derive(Debug, Parser)]
 struct Args {
     #[command(subcommand)]
@@ -15,6 +17,8 @@ struct Args {
 enum Command {
     /// Retrieve and print an access token
     Get { nickname: String },
+    /// List stored clients
+    List,
     /// Add a new client configuration
     Add {
         #[arg(short, long)]
@@ -24,6 +28,8 @@ enum Command {
         #[arg(short, long)]
         client_id: String,
     },
+    /// Remove a saved client
+    Delete { nickname: String },
 }
 
 #[tokio::main]
@@ -53,6 +59,11 @@ async fn main() {
             }
         }
 
+        Command::List => {
+            let table = list_clients(&mut config);
+            table.printstd();
+        }
+
         Command::Get { nickname } => {
             if let Some(auth) = config.clients.get_mut(&nickname) {
                 match get_or_refresh_token_with_input(auth, prompt_credentials_from_user).await {
@@ -72,6 +83,10 @@ async fn main() {
             } else {
                 eprintln!("Client '{}' not found.", nickname);
             }
+        }
+
+        Command::Delete { nickname } => {
+            delete_client(&nickname, &mut config);
         }
     }
 }
