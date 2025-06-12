@@ -12,14 +12,14 @@ use std::{
 const CONFIG_DIR: &str = ".config/tokens";
 const CONFIG_FILE: &str = "config.json";
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct AuthConfig {
     pub auth_url: String,
     pub client_id: String,
     pub refresh_token: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
 pub struct ConfigFile {
     pub clients: HashMap<String, AuthConfig>,
 }
