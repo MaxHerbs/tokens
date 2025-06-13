@@ -1,5 +1,3 @@
-name: Release Tokens
-
 on:
   workflow_call:
 
@@ -10,15 +8,22 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4.2.2
 
-      - name: Install stable toolchain
+      - name: Install musl and dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+
+      - name: Install Rust toolchain with musl target
         uses: actions-rust-lang/setup-rust-toolchain@v1.12.0
         with:
-          components: clippy,rustfmt
+          components: clippy, rustfmt
+          targets: x86_64-unknown-linux-musl
 
-      - name: Build Release
-        run: cargo build --release
+      - name: Build statically linked release binary
+        run: cargo build --release --target x86_64-unknown-linux-musl
 
       - name: Release Tokens
         uses: softprops/action-gh-release@v1
         with:
-          files: ./target/release/tokens
+          files: ./target/x86_64-unknown-linux-musl/release/tokens
+
