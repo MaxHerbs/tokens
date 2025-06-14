@@ -1,13 +1,16 @@
 [package]
 name = "tokens"
-version = "0.1.0"
+version = "1.1.0"
 edition = "2024"
 
 [dependencies]
 clap = { version = "4.5.40", features = ["derive"] }
 dirs = "6.0.0"
 prettytable = "0.10.0"
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", default-features = false, features = [
+  "json",
+  "rustls-tls",
+] }
 rpassword = "7.4.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.140"
