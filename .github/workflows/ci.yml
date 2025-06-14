@@ -15,7 +15,7 @@ jobs:
     uses: ./.github/workflows/_release.yml
 
   coverage:
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository && !(startsWith(github.ref, 'refs/heads/release-please'))
     needs: code
     uses: ./.github/workflows/_coverage.yml
     secrets:
