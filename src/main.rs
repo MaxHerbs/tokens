@@ -22,7 +22,7 @@ enum Command {
     /// Add a new client configuration
     Add {
         #[arg(short, long)]
-        nickname: String,
+        nickname: Option<String>,
         #[arg(short, long)]
         auth_url: String,
         #[arg(short, long)]
@@ -44,6 +44,11 @@ async fn main() {
             auth_url,
             client_id,
         } => {
+            let nickname = match nickname {
+                Some(nickname) => nickname,
+                None => client_id.clone(),
+            };
+
             config.clients.insert(
                 nickname.clone(),
                 AuthConfig {
