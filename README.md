@@ -3,7 +3,6 @@
 [![Coverage](https://codecov.io/gh/maxherbs/tokens/branch/main/graph/badge.svg)](https://codecov.io/gh/maxherbs/tokens)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
-
 # Tokens
 
 Simple CLI tool to manage OAuth clients and retrieve JWT. Store clients and their refresh tokens for quick access.
@@ -13,7 +12,8 @@ Simple CLI tool to manage OAuth clients and retrieve JWT. Store clients and thei
 Run the following to install the latest version. Then add the executable to PATH.
 
 ```bash
-curl -L https://github.com/MaxHerbs/tokens/releases/latest/download/tokens -o tokens
+curl -L https://github.com/MaxHerbs/tokens/releases/latest/download/tokens.zip -o tokens.zip
+unzip tokens.zip
 chmod +x tokens
 ```
 
