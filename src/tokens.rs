@@ -156,7 +156,7 @@ pub fn delete_client(nickname: &str, config: &mut ConfigFile) {
 
 pub fn list_clients(config: &mut ConfigFile) -> Table {
     let mut table = Table::new();
-    table.add_row(row!["Name", "ClientId"]);
+    table.add_row(row!["Nickname", "ClientId"]);
     config.clients.iter().for_each(|(nickname, config)| {
         table.add_row(row![nickname, &config.client_id]);
     });
