@@ -28,7 +28,7 @@ fn test_list_clients() {
     let table = list_clients(&mut config);
     let table_string = table.to_string();
 
-    assert!(table_string.contains("Name"));
+    assert!(table_string.contains("Nickname"));
     assert!(table_string.contains("ClientId"));
     assert!(table_string.contains("test1"));
     assert!(table_string.contains("client_id_1"));
