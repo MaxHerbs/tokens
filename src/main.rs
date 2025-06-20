@@ -18,7 +18,11 @@ struct Args {
 #[derive(Debug, Subcommand)]
 enum Command {
     /// Retrieve and print an access token
-    Get { nickname: String },
+    Get {
+        nickname: String,
+        #[arg(short, long)]
+        refresh_token: bool,
+    },
     /// List stored clients
     List,
     /// Add a new client configuration
@@ -81,9 +85,12 @@ async fn run_command<F>(
             table.printstd();
         }
 
-        Command::Get { nickname } => {
+        Command::Get {
+            nickname,
+            refresh_token,
+        } => {
             if let Some(auth) = config.clients.get_mut(&nickname) {
-                match get_or_refresh_token_with_input(auth, prompt_fn).await {
+                match get_or_refresh_token_with_input(auth, refresh_token, prompt_fn).await {
                     Ok(token) => {
                         println!("{}", token);
                         if let Err(err) = save_config(config_path, &config) {
@@ -144,6 +151,7 @@ mod tests {
 
         let command = Command::Get {
             nickname: "prod".to_string(),
+            refresh_token: false,
         };
         let args = crate::Args { cmd: command };
         run_command(args, config_file, &conf_dir, input).await;
