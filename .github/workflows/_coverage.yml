@@ -28,9 +28,15 @@ jobs:
         run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Run coverage
-        run: cargo tarpaulin --out Xml
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            cargo tarpaulin --out Xml
+          else
+              cargo tarpaulin --out Html
+            fi
 
       - name: Upload coverage to Codecov
+        if: github.ref == 'refs/heads/main'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -40,3 +46,9 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+      - name: Upload coverage report as artifact
+        if: github.ref != 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage.html
+          path: ./tarpaulin-report.html
