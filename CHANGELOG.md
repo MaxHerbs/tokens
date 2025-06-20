@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0](https://github.com/MaxHerbs/tokens/compare/v0.1.1...v1.0.0) (2025-06-20)
+
+
+### Features
+
+* access refresh token ([b292801](https://github.com/MaxHerbs/tokens/commit/b292801d98ccc3cbc066dae1c7a0883ace0566a5))
+
 ## [0.1.1](https://github.com/MaxHerbs/tokens/compare/v0.1.0...v0.1.1) (2025-06-14)
 
 
