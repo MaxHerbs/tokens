@@ -31,7 +31,7 @@ async fn test_get_or_refresh_token_with_valid_refresh_token() {
         refresh_token: Some("old_refresh_token".into()),
     };
 
-    let token = get_or_refresh_token_with_input(&mut auth, || {
+    let token = get_or_refresh_token_with_input(&mut auth, false, || {
         panic!("Should not prompt credentials if refresh works");
     })
     .await
@@ -67,9 +67,10 @@ async fn test_get_or_refresh_token_with_invalid_refresh_token_fallbacks_to_promp
         refresh_token: Some("invalid".into()),
     };
 
-    let token = get_or_refresh_token_with_input(&mut auth, || Ok(("user".into(), "pass".into())))
-        .await
-        .unwrap();
+    let token =
+        get_or_refresh_token_with_input(&mut auth, false, || Ok(("user".into(), "pass".into())))
+            .await
+            .unwrap();
 
     assert_eq!(token, "new_token");
     assert_eq!(auth.refresh_token, Some("fresh_token".into()));

@@ -32,6 +32,7 @@ struct TokenResponse {
 
 pub async fn get_or_refresh_token_with_input<F>(
     auth: &mut AuthConfig,
+    fetch_refresh_token: bool,
     prompt_credentials: F,
 ) -> Result<String, Box<dyn std::error::Error>>
 where
@@ -41,7 +42,11 @@ where
 
     if let Some(refresh_token) = auth.refresh_token.clone() {
         if let Ok(token) = use_refresh_token(&client, auth, &refresh_token).await {
-            return Ok(token);
+            if fetch_refresh_token {
+                return Ok(refresh_token);
+            } else {
+                return Ok(token);
+            }
         }
     }
 
