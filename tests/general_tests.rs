@@ -34,6 +34,7 @@ fn test_list_clients() {
     assert!(table_string.contains("client_id_1"));
     assert!(table_string.contains("test2"));
     assert!(table_string.contains("client_id_2"));
+    assert!(table_string.contains("https://auth2.com"));
 }
 
 #[test]
