@@ -74,9 +74,9 @@ async fn run_command<F>(
                 },
             );
             if let Err(err) = save_config(config_path, &config) {
-                eprintln!("Failed to save config: {}", err);
+                eprintln!("Failed to save config: {err}");
             } else {
-                println!("Client '{}' added.", nickname);
+                println!("Client '{nickname}' added.");
             }
         }
 
@@ -92,20 +92,19 @@ async fn run_command<F>(
             if let Some(auth) = config.clients.get_mut(&nickname) {
                 match get_or_refresh_token_with_input(auth, refresh_token, prompt_fn).await {
                     Ok(token) => {
-                        println!("{}", token);
+                        println!("{token}");
                         if let Err(err) = save_config(config_path, &config) {
                             eprintln!(
-                                "Warning: token retrieved but failed to save config: {}",
-                                err
+                                "Warning: token retrieved but failed to save config: {err}"
                             );
                         }
                     }
                     Err(err) => {
-                        eprintln!("Failed to retrieve token: {}", err);
+                        eprintln!("Failed to retrieve token: {err}");
                     }
                 }
             } else {
-                eprintln!("Client '{}' not found.", nickname);
+                eprintln!("Client '{nickname}' not found.");
             }
         }
 
