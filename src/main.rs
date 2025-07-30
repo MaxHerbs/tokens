@@ -1,7 +1,8 @@
 mod tokens;
 use std::path::Path;
 
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
+use serde_json::json;
 use tokens::{
     AuthConfig, get_config_path, get_or_refresh_token_with_input, prompt_credentials_from_user,
     read_config, save_config,
@@ -22,6 +23,8 @@ enum Command {
         nickname: String,
         #[arg(short, long)]
         refresh_token: bool,
+        #[arg(short, long)]
+        format: Option<Format>,
     },
     /// List stored clients
     List,
@@ -36,6 +39,12 @@ enum Command {
     },
     /// Remove a saved client
     Delete { nickname: String },
+}
+
+#[derive(Parser, Clone, Debug, ValueEnum)]
+#[clap(rename_all = "lower")]
+enum Format {
+    Header,
 }
 
 #[tokio::main]
@@ -88,15 +97,26 @@ async fn run_command<F>(
         Command::Get {
             nickname,
             refresh_token,
+            format,
         } => {
             if let Some(auth) = config.clients.get_mut(&nickname) {
                 match get_or_refresh_token_with_input(auth, refresh_token, prompt_fn).await {
                     Ok(token) => {
-                        println!("{token}");
+                        let msg = if let Some(format) = format {
+                            match format {
+                                Format::Header => json!(
+                                    {
+                                        "Authorization": format!("Bearer {token}")
+                                    }
+                                )
+                                .to_string(),
+                            }
+                        } else {
+                            token
+                        };
+                        println!("{msg}");
                         if let Err(err) = save_config(config_path, &config) {
-                            eprintln!(
-                                "Warning: token retrieved but failed to save config: {err}"
-                            );
+                            eprintln!("Warning: token retrieved but failed to save config: {err}");
                         }
                     }
                     Err(err) => {
@@ -151,6 +171,7 @@ mod tests {
         let command = Command::Get {
             nickname: "prod".to_string(),
             refresh_token: false,
+            format: None,
         };
         let args = crate::Args { cmd: command };
         run_command(args, config_file, &conf_dir, input).await;
