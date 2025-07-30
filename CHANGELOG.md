@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.0](https://github.com/MaxHerbs/tokens/compare/v1.0.0...v1.1.0) (2025-07-30)
+
+
+### Features
+
+* add auth domain to list table ([13b19d3](https://github.com/MaxHerbs/tokens/commit/13b19d35245448a127bd7ab19ca455d638bb0934))
+* add special formatting options ([fd22b99](https://github.com/MaxHerbs/tokens/commit/fd22b99cde0740c46fe396762ed89c4a2ba86d25))
+
 ## [1.0.0](https://github.com/MaxHerbs/tokens/compare/v0.1.1...v1.0.0) (2025-06-20)
 
 
