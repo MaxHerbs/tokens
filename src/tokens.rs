@@ -151,11 +151,11 @@ pub fn delete_client(nickname: &str, config: &mut ConfigFile) {
     if config.clients.remove(nickname).is_some() {
         let config_file = get_config_path();
         match save_config(&config_file, config) {
-            Ok(()) => println!("Client '{}' removed", nickname),
-            Err(e) => println!("Failed to update config file.\n{}", e),
+            Ok(()) => println!("Client '{nickname}' removed"),
+            Err(e) => println!("Failed to update config file.\n{e}"),
         }
     } else {
-        println!("Client '{}' doesn't exist", nickname);
+        println!("Client '{nickname}' doesn't exist");
     }
 }
 
