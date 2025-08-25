@@ -8,7 +8,7 @@ use tokens::{
     read_config, save_config,
 };
 
-use crate::tokens::{delete_client, list_clients};
+use crate::tokens::{delete_client, list_clients, logout_client};
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -39,6 +39,8 @@ enum Command {
     },
     /// Remove a saved client
     Delete { nickname: String },
+    /// Logout of client.
+    Logout { nickname: String },
 }
 
 #[derive(Parser, Clone, Debug, ValueEnum)]
@@ -130,6 +132,9 @@ async fn run_command<F>(
 
         Command::Delete { nickname } => {
             delete_client(&nickname, &mut config);
+        }
+        Command::Logout { nickname } => {
+            logout_client(&nickname, &mut config);
         }
     }
 }

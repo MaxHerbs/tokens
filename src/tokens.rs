@@ -159,6 +159,19 @@ pub fn delete_client(nickname: &str, config: &mut ConfigFile) {
     }
 }
 
+pub fn logout_client(nickname: &str, config: &mut ConfigFile) {
+    if let Some(client) = config.clients.get_mut(nickname) {
+        client.refresh_token = None;
+        let config_file = get_config_path();
+        match save_config(&config_file, config) {
+            Ok(()) => println!("Refresh token for '{nickname}' removed"),
+            Err(e) => println!("Failed to update config file.\n{e}"),
+        }
+    } else {
+        println!("Client '{nickname}' doesn't exist");
+    }
+}
+
 pub fn list_clients(config: &mut ConfigFile) -> Table {
     let mut table = Table::new();
     table.add_row(row!["Nickname", "ClientId", "URL"]);

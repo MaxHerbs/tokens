@@ -1,6 +1,8 @@
+use serial_test::serial;
 use tokens::tokens::*;
 
 #[test]
+#[serial]
 fn test_list_clients() {
     let mut config = ConfigFile {
         clients: [
@@ -38,6 +40,7 @@ fn test_list_clients() {
 }
 
 #[test]
+#[serial]
 fn test_delete_client() {
     let mut config = ConfigFile {
         clients: [
@@ -73,6 +76,60 @@ fn test_delete_client() {
                 refresh_token: None,
             },
         )]
+        .into_iter()
+        .collect(),
+    };
+
+    assert_eq!(config, target);
+}
+
+#[test]
+#[serial]
+fn test_logout_client() {
+    let mut config = ConfigFile {
+        clients: [
+            (
+                "test1".to_string(),
+                AuthConfig {
+                    auth_url: "https://auth1.com".to_string(),
+                    client_id: "client_id_1".to_string(),
+                    refresh_token: Some("token1".to_string()),
+                },
+            ),
+            (
+                "test2".to_string(),
+                AuthConfig {
+                    auth_url: "https://auth2.com".to_string(),
+                    client_id: "client_id_2".to_string(),
+                    refresh_token: None,
+                },
+            ),
+        ]
+        .into_iter()
+        .collect(),
+    };
+
+    logout_client("test1", &mut config);
+
+    let target = ConfigFile {
+        clients: [
+            (
+                "test1".to_string(),
+                AuthConfig {
+                    auth_url: "https://auth1.com".to_string(),
+                    client_id: "client_id_1".to_string(),
+                    refresh_token: None,
+                },
+            ),
+            (
+                "test2".to_string(),
+                AuthConfig {
+                    auth_url: "https://auth2.com".to_string(),
+                    client_id: "client_id_2".to_string(),
+                    refresh_token: None,
+                },
+            ),
+        ]
         .into_iter()
         .collect(),
     };
