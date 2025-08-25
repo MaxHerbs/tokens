@@ -33,6 +33,7 @@ struct TokenResponse {
 pub async fn get_or_refresh_token_with_input<F>(
     auth: &mut AuthConfig,
     fetch_refresh_token: bool,
+    scopes: &[String],
     prompt_credentials: F,
 ) -> Result<String, Box<dyn std::error::Error>>
 where
@@ -40,18 +41,18 @@ where
 {
     let client = Client::new();
 
-    if let Some(refresh_token) = auth.refresh_token.clone() {
-        if let Ok(token) = use_refresh_token(&client, auth, &refresh_token).await {
-            if fetch_refresh_token {
-                return Ok(refresh_token);
-            } else {
-                return Ok(token);
-            }
+    if let Some(refresh_token) = auth.refresh_token.clone()
+        && let Ok(token) = use_refresh_token(&client, auth, &refresh_token, scopes).await
+    {
+        if fetch_refresh_token {
+            return Ok(refresh_token);
+        } else {
+            return Ok(token);
         }
     }
 
     let (username, password) = prompt_credentials()?;
-    request_new_token(&client, auth, &username, &password).await
+    request_new_token(&client, auth, &username, &password, scopes).await
 }
 
 async fn request_new_token(
@@ -59,13 +60,20 @@ async fn request_new_token(
     auth: &mut AuthConfig,
     username: &str,
     password: &str,
+    scopes: &[String],
 ) -> Result<String, Box<dyn std::error::Error>> {
-    let form = [
+    let mut form = vec![
         ("grant_type", "password"),
         ("client_id", &auth.client_id),
         ("username", username),
         ("password", password),
     ];
+
+    let scopes_str: String;
+    if !scopes.is_empty() {
+        scopes_str = scopes.join(" ");
+        form.push(("scope", &scopes_str));
+    }
 
     let url = format!("{}/protocol/openid-connect/token", auth.auth_url);
     let res = client
@@ -101,12 +109,23 @@ async fn use_refresh_token(
     client: &Client,
     auth: &mut AuthConfig,
     refresh_token: &str,
+    scopes: &[String],
 ) -> Result<String, reqwest::Error> {
-    let form = [
+    let mut form = vec![
         ("grant_type", "refresh_token"),
         ("client_id", &auth.client_id),
         ("refresh_token", refresh_token),
     ];
+
+    let scopes_str: String;
+    if !scopes.is_empty() {
+        println!(
+            "Some scopes require password grant rather rather than using existing refresh tokens. Run 'tokens clear <CLIENT>' to force password login if requested scope is missing from token."
+        );
+        scopes_str = scopes.join(" ");
+        form.push(("scope", &scopes_str));
+    }
+
     let url = format!("{}/protocol/openid-connect/token", auth.auth_url);
 
     let res = client
@@ -179,4 +198,42 @@ pub fn list_clients(config: &mut ConfigFile) -> Table {
         table.add_row(row![nickname, &config.client_id, &config.auth_url]);
     });
     table
+}
+
+#[cfg(test)]
+mod tests {
+    use mockito::{Matcher::Regex, Server};
+
+    use crate::tokens::{AuthConfig, get_or_refresh_token_with_input};
+
+    #[tokio::test]
+    async fn ensure_scopes() {
+        let mock_response = r#"{"access_token": "token", "refresh_token": "refresh"}"#;
+        let mut server = Server::new_async().await;
+
+        let mock = server
+            .mock("POST", "/realms/master/protocol/openid-connect/token")
+            .with_status(200)
+            .match_body(Regex("scope=openid\\+profile".into()))
+            .with_header("content-type", "application/json")
+            .with_body(mock_response)
+            .create_async()
+            .await;
+
+        let mut auth = AuthConfig {
+            auth_url: format!("{}/realms/master", server.url()),
+            client_id: "test".to_string(),
+            refresh_token: None,
+        };
+
+        let scopes = vec!["openid".to_string(), "profile".to_string()];
+        let token = get_or_refresh_token_with_input(&mut auth, false, &scopes, || {
+            Ok(("user".into(), "pass".into()))
+        })
+        .await
+        .unwrap();
+
+        assert_eq!(token, "token");
+        mock.assert_async().await;
+    }
 }

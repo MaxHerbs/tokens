@@ -20,15 +20,21 @@ struct Args {
 enum Command {
     /// Retrieve and print an access token
     Get {
+        /// Client nickname. Defualts to client ID.
         nickname: String,
+        /// Fetch refresh token rather than JWT.
         #[arg(short, long)]
         refresh_token: bool,
+        /// Special output formats.
         #[arg(short, long)]
         format: Option<Format>,
+        /// Additional scopes. Expects a space-delimitered list.
+        #[arg(short, long, num_args = 1.., value_delimiter = ' ')]
+        scopes: Vec<String>,
     },
-    /// List stored clients
+    /// List stored clients.
     List,
-    /// Add a new client configuration
+    /// Add a new client configuration.
     Add {
         #[arg(short, long)]
         nickname: Option<String>,
@@ -37,7 +43,7 @@ enum Command {
         #[arg(short, long)]
         client_id: String,
     },
-    /// Remove a saved client
+    /// Remove a saved client.
     Delete { nickname: String },
     /// Logout of client.
     Logout { nickname: String },
@@ -100,9 +106,11 @@ async fn run_command<F>(
             nickname,
             refresh_token,
             format,
+            scopes,
         } => {
             if let Some(auth) = config.clients.get_mut(&nickname) {
-                match get_or_refresh_token_with_input(auth, refresh_token, prompt_fn).await {
+                match get_or_refresh_token_with_input(auth, refresh_token, &scopes, prompt_fn).await
+                {
                     Ok(token) => {
                         let msg = if let Some(format) = format {
                             match format {
@@ -177,6 +185,7 @@ mod tests {
             nickname: "prod".to_string(),
             refresh_token: false,
             format: None,
+            scopes: vec![],
         };
         let args = crate::Args { cmd: command };
         run_command(args, config_file, &conf_dir, input).await;
