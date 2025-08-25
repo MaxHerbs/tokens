@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/MaxHerbs/tokens/compare/v1.1.0...v1.2.0) (2025-08-25)
+
+
+### Features
+
+* logout of clients ([689620e](https://github.com/MaxHerbs/tokens/commit/689620ecf294863d4f6c6a714a8300c13cebc760))
+* request specific scopes ([d2ef570](https://github.com/MaxHerbs/tokens/commit/d2ef570b3ed41d174f4ea522e2cbcc0114fed288))
+
 ## [1.1.0](https://github.com/MaxHerbs/tokens/compare/v1.0.0...v1.1.0) (2025-07-30)
 
 
