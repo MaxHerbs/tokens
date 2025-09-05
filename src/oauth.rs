@@ -112,6 +112,10 @@ impl TokenManager {
             let scopes_str: &'a str = Box::leak(scopes.join(" ").into_boxed_str());
             form.push(("scope", scopes_str));
         }
+
+        if let Some(secret) = &auth.secret {
+            form.push(("secret", secret));
+        }
     }
 }
 

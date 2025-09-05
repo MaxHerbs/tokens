@@ -6,6 +6,7 @@ pub struct AddCommand {
     pub nickname: Option<String>,
     pub auth_url: String,
     pub client_id: String,
+    pub secret: Option<String>,
 }
 
 impl CommandHandler for AddCommand {
@@ -19,6 +20,7 @@ impl CommandHandler for AddCommand {
             auth_url: self.auth_url.clone(),
             client_id: self.client_id.clone(),
             refresh_token: None,
+            secret: self.secret.clone(),
         };
 
         context
