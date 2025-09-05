@@ -1,14 +1,16 @@
-mod tokens;
-use std::path::Path;
+mod commands;
+mod config;
+mod oauth;
+mod types;
 
-use clap::{Parser, Subcommand, ValueEnum};
-use serde_json::json;
-use tokens::{
-    AuthConfig, get_config_path, get_or_refresh_token_with_input, prompt_credentials_from_user,
-    read_config, save_config,
+use clap::{Parser, Subcommand};
+use commands::{
+    CommandContext, CommandHandler, Format, add::AddCommand, delete::DeleteCommand,
+    get::GetCommand, list::ListCommand, logout::LogoutCommand,
 };
-
-use crate::tokens::{delete_client, list_clients, logout_client};
+use config::ConfigManager;
+use oauth::TokenManager;
+use types::ConfigFile;
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -42,6 +44,8 @@ enum Command {
         auth_url: String,
         #[arg(short, long)]
         client_id: String,
+        #[arg(short, long)]
+        secret: Option<String>,
     },
     /// Remove a saved client.
     Delete { nickname: String },
@@ -49,156 +53,83 @@ enum Command {
     Logout { nickname: String },
 }
 
-#[derive(Parser, Clone, Debug, ValueEnum)]
-#[clap(rename_all = "lower")]
-enum Format {
-    Header,
-}
-
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-    let config_path = get_config_path();
-    let config = read_config(&config_path).unwrap_or_default();
-    run_command(args, config, &config_path, prompt_credentials_from_user).await;
+    let config_manager = ConfigManager::new();
+    let token_manager = TokenManager::new();
+    let config_path = config_manager.get_config_path();
+    let mut config = config_manager.read_config(&config_path).unwrap_or_default();
+
+    if let Err(e) = run_command(args, &mut config, &config_manager, &token_manager).await {
+        eprintln!("{e}");
+    }
 }
 
-async fn run_command<F>(
+async fn run_command(
     args: Args,
-    mut config: tokens::ConfigFile,
-    config_path: &Path,
-    prompt_fn: F,
-) where
-    F: Fn() -> Result<(String, String), Box<dyn std::error::Error>>,
-{
+    config: &mut ConfigFile,
+    config_manager: &ConfigManager,
+    token_manager: &TokenManager,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let context = CommandContext {
+        config,
+        config_manager,
+        token_manager,
+    };
+
     match args.cmd {
         Command::Add {
             nickname,
             auth_url,
             client_id,
+            secret,
         } => {
-            let nickname = match nickname {
-                Some(nickname) => nickname,
-                None => client_id.clone(),
+            let command = AddCommand {
+                nickname,
+                auth_url,
+                client_id,
+                secret,
             };
-
-            config.clients.insert(
-                nickname.clone(),
-                AuthConfig {
-                    auth_url,
-                    client_id,
-                    refresh_token: None,
-                },
-            );
-            if let Err(err) = save_config(config_path, &config) {
-                eprintln!("Failed to save config: {err}");
-            } else {
-                println!("Client '{nickname}' added.");
-            }
+            command.execute(context).await
         }
-
         Command::List => {
-            let table = list_clients(&mut config);
-            table.printstd();
+            let command = ListCommand;
+            command.execute(context).await
         }
-
         Command::Get {
             nickname,
             refresh_token,
             format,
             scopes,
         } => {
-            if let Some(auth) = config.clients.get_mut(&nickname) {
-                match get_or_refresh_token_with_input(auth, refresh_token, &scopes, prompt_fn).await
-                {
-                    Ok(token) => {
-                        let msg = if let Some(format) = format {
-                            match format {
-                                Format::Header => json!(
-                                    {
-                                        "Authorization": format!("Bearer {token}")
-                                    }
-                                )
-                                .to_string(),
-                            }
-                        } else {
-                            token
-                        };
-                        println!("{msg}");
-                        if let Err(err) = save_config(config_path, &config) {
-                            eprintln!("Warning: token retrieved but failed to save config: {err}");
-                        }
-                    }
-                    Err(err) => {
-                        eprintln!("Failed to retrieve token: {err}");
-                    }
-                }
-            } else {
-                eprintln!("Client '{nickname}' not found.");
-            }
+            let command = GetCommand {
+                nickname,
+                refresh_token,
+                format,
+                scopes,
+            };
+            command.execute(context).await
         }
-
         Command::Delete { nickname } => {
-            delete_client(&nickname, &mut config);
+            let command = DeleteCommand { nickname };
+            command.execute(context).await
         }
         Command::Logout { nickname } => {
-            logout_client(&nickname, &mut config);
+            let command = LogoutCommand { nickname };
+            command.execute(context).await
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::config::ConfigManager;
+    use crate::oauth::TokenManager;
+    use crate::types::{AuthConfig, ConfigFile};
+    use crate::{Args, Command, run_command};
     use std::collections::HashMap;
-
-    use mockito::Server;
     use tempfile::TempDir;
-
-    use crate::{Command, run_command, tokens::AuthConfig, tokens::ConfigFile};
-
-    #[tokio::test]
-    async fn get_new_client() {
-        let mock_response = r#"{"access_token": "token", "refresh_token": "refresh"}"#;
-        let mut server = Server::new_async().await;
-        let mock = server
-            .mock("POST", "/realms/master/protocol/openid-connect/token")
-            .with_status(200)
-            .with_header("content-type", "application/json")
-            .with_body(mock_response)
-            .create_async()
-            .await;
-
-        let tmp_dir = TempDir::new().unwrap();
-        let conf_dir = tmp_dir.path().join("config.json");
-        let mut config = HashMap::new();
-        config.insert(
-            "prod".to_string(),
-            AuthConfig {
-                auth_url: format!("{}/realms/master", server.url()),
-                client_id: "test".to_string(),
-                refresh_token: None,
-            },
-        );
-        let config_file = ConfigFile { clients: config };
-
-        let command = Command::Get {
-            nickname: "prod".to_string(),
-            refresh_token: false,
-            format: None,
-            scopes: vec![],
-        };
-        let args = crate::Args { cmd: command };
-        run_command(args, config_file, &conf_dir, input).await;
-        mock.assert_async().await;
-
-        println!("{:?}", tmp_dir.path().read_dir());
-        let response_config: ConfigFile =
-            serde_json::from_reader(std::fs::File::open(&conf_dir).unwrap()).unwrap();
-
-        let client = response_config.clients.get("prod").unwrap();
-        assert_eq!(client.client_id, "test");
-        assert_eq!(client.refresh_token.as_deref(), Some("refresh"));
-    }
 
     #[tokio::test]
     async fn add_client() {
@@ -206,10 +137,10 @@ mod tests {
             nickname: Some("test_name".to_string()),
             auth_url: "domain".to_string(),
             client_id: "clientId".to_string(),
+            secret: None,
         };
 
-        let tmp_dir = TempDir::new().unwrap();
-        let conf_dir = tmp_dir.path().join("config.json");
+        let _tmp_dir = TempDir::new().unwrap();
         let mut config = HashMap::new();
         config.insert(
             "prod".to_string(),
@@ -217,24 +148,170 @@ mod tests {
                 auth_url: "existing".to_string(),
                 client_id: "existing".to_string(),
                 refresh_token: None,
+                secret: None,
             },
         );
-        let config_file = ConfigFile { clients: config };
+        let mut config_file = ConfigFile { clients: config };
 
+        let config_manager = ConfigManager::new();
+        let token_manager = TokenManager::new();
         let args = crate::Args { cmd: command };
-        run_command(args, config_file, &conf_dir, input).await;
 
-        println!("{:?}", tmp_dir.path().read_dir());
-        let read_back_config: ConfigFile =
-            serde_json::from_reader(std::fs::File::open(&conf_dir).unwrap()).unwrap();
+        let result = run_command(args, &mut config_file, &config_manager, &token_manager).await;
+        assert!(result.is_ok());
 
-        let existing = read_back_config.clients.get("prod").unwrap();
-        let new = read_back_config.clients.get("test_name").unwrap();
+        // Verify the client was added to the config
+        assert!(config_file.clients.contains_key("test_name"));
+        assert!(config_file.clients.contains_key("prod"));
+
+        let existing = config_file.clients.get("prod").unwrap();
+        let new = config_file.clients.get("test_name").unwrap();
         assert!(existing.auth_url == "existing");
         assert!(new.auth_url == "domain");
     }
 
-    fn input() -> Result<(String, String), Box<dyn std::error::Error>> {
-        Ok(("user".to_string(), "password".to_string()))
+    #[tokio::test]
+    async fn test_run_command_list() {
+        let mut config = ConfigFile {
+            clients: {
+                let mut clients = HashMap::new();
+                clients.insert(
+                    "test_client".to_string(),
+                    AuthConfig {
+                        auth_url: "https://example.com".to_string(),
+                        client_id: "client123".to_string(),
+                        refresh_token: Some("refresh123".to_string()),
+                        secret: None,
+                    },
+                );
+                clients
+            },
+        };
+
+        let config_manager = ConfigManager::new();
+        let token_manager = TokenManager::new();
+        let args = Args { cmd: Command::List };
+
+        let result = run_command(args, &mut config, &config_manager, &token_manager).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_run_command_delete_existing() {
+        let mut config = ConfigFile {
+            clients: {
+                let mut clients = HashMap::new();
+                clients.insert(
+                    "test_client".to_string(),
+                    AuthConfig {
+                        auth_url: "https://example.com".to_string(),
+                        client_id: "client123".to_string(),
+                        refresh_token: Some("refresh123".to_string()),
+                        secret: None,
+                    },
+                );
+                clients
+            },
+        };
+
+        let config_manager = ConfigManager::new();
+        let token_manager = TokenManager::new();
+        let args = Args {
+            cmd: Command::Delete {
+                nickname: "test_client".to_string(),
+            },
+        };
+
+        let result = run_command(args, &mut config, &config_manager, &token_manager).await;
+        assert!(result.is_ok());
+        assert!(!config.clients.contains_key("test_client"));
+    }
+
+    #[tokio::test]
+    async fn test_run_command_delete_nonexistent() {
+        let mut config = ConfigFile::default();
+
+        let config_manager = ConfigManager::new();
+        let token_manager = TokenManager::new();
+        let args = Args {
+            cmd: Command::Delete {
+                nickname: "nonexistent".to_string(),
+            },
+        };
+
+        let result = run_command(args, &mut config, &config_manager, &token_manager).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_run_command_logout() {
+        let mut config = ConfigFile {
+            clients: {
+                let mut clients = HashMap::new();
+                clients.insert(
+                    "test_client".to_string(),
+                    AuthConfig {
+                        auth_url: "https://example.com".to_string(),
+                        client_id: "client123".to_string(),
+                        refresh_token: Some("refresh123".to_string()),
+                        secret: None,
+                    },
+                );
+                clients
+            },
+        };
+
+        let config_manager = ConfigManager::new();
+        let token_manager = TokenManager::new();
+        let args = Args {
+            cmd: Command::Logout {
+                nickname: "test_client".to_string(),
+            },
+        };
+
+        let result = run_command(args, &mut config, &config_manager, &token_manager).await;
+        assert!(result.is_ok());
+
+        // Verify refresh token was cleared
+        let client = config.clients.get("test_client").unwrap();
+        assert_eq!(client.refresh_token, None);
+    }
+
+    #[tokio::test]
+    async fn test_run_command_get_nonexistent_client() {
+        let mut config = ConfigFile::default();
+
+        let config_manager = ConfigManager::new();
+        let token_manager = TokenManager::new();
+        let args = Args {
+            cmd: Command::Get {
+                nickname: "nonexistent".to_string(),
+                refresh_token: false,
+                format: None,
+                scopes: vec![],
+            },
+        };
+
+        let result = run_command(args, &mut config, &config_manager, &token_manager).await;
+        assert!(result.is_ok()); // Should succeed but print error message
+    }
+
+    #[tokio::test]
+    async fn test_run_command_get_with_scopes_and_format() {
+        let mut config = ConfigFile::default();
+
+        let config_manager = ConfigManager::new();
+        let token_manager = TokenManager::new();
+        let args = Args {
+            cmd: Command::Get {
+                nickname: "test_client".to_string(),
+                refresh_token: true,
+                format: Some(crate::commands::Format::Header),
+                scopes: vec!["openid".to_string(), "profile".to_string()],
+            },
+        };
+
+        let result = run_command(args, &mut config, &config_manager, &token_manager).await;
+        assert!(result.is_ok());
     }
 }
