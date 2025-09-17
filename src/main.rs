@@ -11,6 +11,7 @@ use tokens::{
 use crate::tokens::{delete_client, list_clients, logout_client};
 
 #[derive(Debug, Parser)]
+#[command(version, about = "Manage OAuth2 clients and tokens")]
 struct Args {
     #[command(subcommand)]
     cmd: Command,
