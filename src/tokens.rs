@@ -119,9 +119,6 @@ async fn use_refresh_token(
 
     let scopes_str: String;
     if !scopes.is_empty() {
-        println!(
-            "Some scopes require password grant rather rather than using existing refresh tokens. Run 'tokens clear <CLIENT>' to force password login if requested scope is missing from token."
-        );
         scopes_str = scopes.join(" ");
         form.push(("scope", &scopes_str));
     }
