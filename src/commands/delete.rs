@@ -55,6 +55,7 @@ mod tests {
                         auth_url: "https://auth1.com".to_string(),
                         client_id: "client_id_1".to_string(),
                         refresh_token: Some("token1".to_string()),
+                        secret: None,
                     },
                 ),
                 (
@@ -63,6 +64,7 @@ mod tests {
                         auth_url: "https://auth2.com".to_string(),
                         client_id: "client_id_2".to_string(),
                         refresh_token: None,
+                        secret: None,
                     },
                 ),
             ]
@@ -80,6 +82,7 @@ mod tests {
                     auth_url: "https://auth2.com".to_string(),
                     client_id: "client_id_2".to_string(),
                     refresh_token: None,
+                    secret: None,
                 },
             )]
             .into_iter()
@@ -102,6 +105,7 @@ mod tests {
                         auth_url: "https://example.com".to_string(),
                         client_id: "client123".to_string(),
                         refresh_token: Some("refresh123".to_string()),
+                        secret: None,
                     },
                 );
                 clients

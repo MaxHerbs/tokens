@@ -6,6 +6,7 @@ pub struct AuthConfig {
     pub auth_url: String,
     pub client_id: String,
     pub refresh_token: Option<String>,
+    pub secret: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
@@ -57,6 +58,7 @@ mod tests {
             auth_url: "https://example.com".to_string(),
             client_id: "client123".to_string(),
             refresh_token: Some("refresh123".to_string()),
+            secret: None,
         };
 
         let serialized = serde_json::to_string(&auth_config).unwrap();
@@ -71,6 +73,7 @@ mod tests {
             auth_url: "https://example.com".to_string(),
             client_id: "client123".to_string(),
             refresh_token: None,
+            secret: None,
         };
 
         let serialized = serde_json::to_string(&auth_config).unwrap();
@@ -94,6 +97,7 @@ mod tests {
                 auth_url: "https://example.com".to_string(),
                 client_id: "client123".to_string(),
                 refresh_token: Some("refresh123".to_string()),
+                secret: None,
             },
         );
 
