@@ -6,6 +6,7 @@ pub struct AddCommand {
     pub nickname: Option<String>,
     pub auth_url: String,
     pub client_id: String,
+    pub secret: Option<String>,
 }
 
 impl CommandHandler for AddCommand {
@@ -19,6 +20,7 @@ impl CommandHandler for AddCommand {
             auth_url: self.auth_url.clone(),
             client_id: self.client_id.clone(),
             refresh_token: None,
+            secret: self.secret.clone(),
         };
 
         context
@@ -66,6 +68,7 @@ mod tests {
             nickname: Some("test_client".to_string()),
             auth_url: "https://example.com".to_string(),
             client_id: "client123".to_string(),
+            secret: None,
         };
 
         let mock_credentials_provider = MockCredentialsProvider;
@@ -95,6 +98,7 @@ mod tests {
             nickname: None,
             auth_url: "https://example.com".to_string(),
             client_id: "client123".to_string(),
+            secret: Some("secret".to_string()),
         };
 
         let mock_credentials_provider = MockCredentialsProvider;
@@ -108,5 +112,12 @@ mod tests {
         let result = add_command.execute(context).await;
         assert!(result.is_ok());
         assert!(config.clients.contains_key("client123"));
+        assert_eq!(
+            config
+                .clients
+                .get("client123")
+                .and_then(|client| client.secret.clone()),
+            Some("secret".to_string())
+        );
     }
 }

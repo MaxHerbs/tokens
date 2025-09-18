@@ -130,6 +130,7 @@ mod tests {
                     auth_url: server.url(""),
                     client_id: "test-client".into(),
                     refresh_token: Some("existing_refresh_token".into()),
+                    secret: None,
                 },
             );
 
@@ -179,6 +180,7 @@ mod tests {
                     auth_url: server.url(""),
                     client_id: "test-client".into(),
                     refresh_token: Some("existing_refresh_token".into()),
+                    secret: None,
                 },
             );
 
@@ -221,6 +223,7 @@ mod tests {
                     auth_url: server.url(""),
                     client_id: "test-client".into(),
                     refresh_token: Some("invalid_refresh_token".into()),
+                    secret: None,
                 },
             );
 
@@ -272,6 +275,7 @@ mod tests {
                     auth_url: server.url(""),
                     client_id: "test-client".into(),
                     refresh_token: Some("existing_refresh_token".into()),
+                    secret: None,
                 },
             );
 
@@ -321,6 +325,7 @@ mod tests {
                     auth_url: server.url(""),
                     client_id: "test-client".into(),
                     refresh_token: Some("existing_refresh_token".into()),
+                    secret: None,
                 },
             );
 

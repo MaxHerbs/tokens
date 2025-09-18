@@ -45,6 +45,8 @@ enum Command {
         auth_url: String,
         #[arg(short, long)]
         client_id: String,
+        #[arg(short, long)]
+        secret: Option<String>,
     },
     /// Remove a saved client.
     Delete { nickname: String },
@@ -93,11 +95,13 @@ async fn run_command(
             nickname,
             auth_url,
             client_id,
+            secret,
         } => {
             let command = AddCommand {
                 nickname,
                 auth_url,
                 client_id,
+                secret,
             };
             command.execute(context).await
         }
@@ -150,6 +154,7 @@ mod tests {
                 client_id: "test_id".to_string(),
                 auth_url: "https://example.com/auth".to_string(),
                 refresh_token: None,
+                secret: None,
             },
         );
         config
@@ -167,6 +172,7 @@ mod tests {
                 nickname: Some("test".to_string()),
                 auth_url: "https://example.com/auth".to_string(),
                 client_id: "test_client".to_string(),
+                secret: None,
             },
         };
 

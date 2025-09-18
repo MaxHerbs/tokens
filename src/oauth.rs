@@ -105,12 +105,16 @@ impl TokenManager {
     fn add_optional_fields<'a>(
         &self,
         form: &mut Vec<(&str, &'a str)>,
-        _auth: &'a AuthConfig,
+        auth: &'a AuthConfig,
         scopes: &[String],
     ) {
         if !scopes.is_empty() {
             let scopes_str: &'a str = Box::leak(scopes.join(" ").into_boxed_str());
             form.push(("scope", scopes_str));
+        }
+
+        if let Some(secret) = &auth.secret {
+            form.push(("client_secret", secret));
         }
     }
 }
@@ -147,6 +151,41 @@ mod tests {
             auth_url: format!("{}/realms/master", server.url()),
             client_id: "test".to_string(),
             refresh_token: None,
+            secret: None,
+        };
+
+        let token_manager = TokenManager::new();
+        let credentials_provider = MockCredentialsProvider;
+        let scopes = vec!["openid".to_string(), "profile".to_string()];
+
+        let token = token_manager
+            .get_or_refresh_token(&mut auth, false, &scopes, &credentials_provider)
+            .await
+            .unwrap();
+
+        assert_eq!(token, "token");
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn ensure_secret() {
+        let mock_response = r#"{"access_token": "token", "refresh_token": "refresh"}"#;
+        let mut server = Server::new_async().await;
+
+        let mock = server
+            .mock("POST", "/realms/master/protocol/openid-connect/token")
+            .with_status(200)
+            .match_body(Regex("client_secret=secret".into()))
+            .with_header("content-type", "application/json")
+            .with_body(mock_response)
+            .create_async()
+            .await;
+
+        let mut auth = AuthConfig {
+            auth_url: format!("{}/realms/master", server.url()),
+            client_id: "test".to_string(),
+            refresh_token: None,
+            secret: Some("secret".to_string()),
         };
 
         let token_manager = TokenManager::new();
