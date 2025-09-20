@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.0](https://github.com/MaxHerbs/tokens/compare/v1.2.0...v1.3.0) (2025-09-20)
+
+
+### Features
+
+* add --version arg ([15b604e](https://github.com/MaxHerbs/tokens/commit/15b604ea71122d092729c46c987da3642d8fe72b))
+* support client secret ([09cf1ce](https://github.com/MaxHerbs/tokens/commit/09cf1ce798b4a7a2196fc3f8a87b1e1bf02a5c2b))
+
+
+### Bug Fixes
+
+* drop help print to allow shell piping ([f81dcd4](https://github.com/MaxHerbs/tokens/commit/f81dcd4a8cd3f3e0aa3d660bf4d7f74f4692f6b7))
+
 ## [1.2.0](https://github.com/MaxHerbs/tokens/compare/v1.1.0...v1.2.0) (2025-08-25)
 
 
