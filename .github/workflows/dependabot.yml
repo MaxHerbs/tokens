@@ -1,0 +1,25 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      minor:
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: "chore"
+  - package-ecosystem: cargo
+    directories:
+      - /
+    schedule:
+      interval: weekly
+      minor:
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: "chore"
+
