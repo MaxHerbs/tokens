@@ -19,7 +19,7 @@ tokio = { version = "1", features = ["full"] }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-httpmock = "0.7"
+httpmock = "0.8"
 tempfile = "3"
 mockito = "1.7.0"
 serial_test = "3.2.0"
